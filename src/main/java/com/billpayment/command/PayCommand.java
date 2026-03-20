@@ -42,7 +42,9 @@ public class PayCommand implements Command {
             } else {
                 SagaResult result = ctx.getPaymentService().payMultiple(ids);
                 if (result.isSuccess()) {
-                    System.out.println("Payment has been completed for bills: " + ids + ".");
+                    for (int id : ids) {
+                        System.out.println("Payment has been completed for Bill with id " + id + ".");
+                    }
                     System.out.println("Your current balance is: " + Formatter.formatAmount(ctx.getAccountService().getBalance()));
                 } else {
                     System.out.println(result.getErrorMessage());
