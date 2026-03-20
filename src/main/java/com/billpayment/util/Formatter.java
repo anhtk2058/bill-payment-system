@@ -48,16 +48,14 @@ public final class Formatter {
     public static void printBillTable(List<Bill> bills) {
         System.out.printf("%-10s%-12s%-10s%-12s%-12s%s%n",
                 "Bill No.", "Type", "Amount", "Due Date", "State", "PROVIDER");
-        int index = 1;
         for (Bill bill : bills) {
             System.out.printf("%-10s%-12s%-10s%-12s%-12s%s%n",
-                    index + ".",
+                    bill.getId() + ".",
                     bill.getType(),
                     formatAmount(bill.getAmount()),
                     formatDate(bill.getDueDate()),
                     bill.getState(),
                     bill.getProvider());
-            index++;
         }
     }
 
