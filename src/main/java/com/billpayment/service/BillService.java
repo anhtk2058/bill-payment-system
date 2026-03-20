@@ -61,6 +61,9 @@ public class BillService {
 
     public Bill update(int id, BillType type, BigDecimal amount, LocalDate dueDate, String provider) {
         Bill existing = findById(id);
+        if (existing.getState() == BillState.PAID) {
+            throw new InvalidBillStateException(id, "Cannot update a bill that has already been paid.");
+        }
         Bill updated = existing.withDetails(type, amount, dueDate, provider);
         return billRepository.save(updated);
     }

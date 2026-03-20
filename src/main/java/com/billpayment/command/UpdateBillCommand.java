@@ -2,6 +2,7 @@ package com.billpayment.command;
 
 import com.billpayment.ApplicationContext;
 import com.billpayment.exception.BillNotFoundException;
+import com.billpayment.exception.InvalidBillStateException;
 import com.billpayment.model.BillType;
 import com.billpayment.util.Formatter;
 
@@ -31,7 +32,7 @@ public class UpdateBillCommand implements Command {
             String provider = args[5];
             ctx.getBillService().update(id, type, amount, dueDate, provider);
             System.out.println("Bill " + id + " updated successfully.");
-        } catch (BillNotFoundException e) {
+        } catch (BillNotFoundException | InvalidBillStateException e) {
             System.out.println(e.getMessage());
         } catch (IllegalArgumentException e) {
             System.out.println("Invalid input: " + e.getMessage());

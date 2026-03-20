@@ -43,7 +43,7 @@ public class PayBillStep implements SagaStep {
         // Guard: bill must be payable
         if (!bill.isPayable()) {
             return StepResult.failure(
-                "Bill " + bill.getId() + " is already paid.");
+                "Sorry! Bill " + bill.getId() + " is already paid.");
         }
 
         // Guard: check funds before deducting

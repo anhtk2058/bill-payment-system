@@ -2,7 +2,6 @@ package com.billpayment.repository;
 
 import com.billpayment.model.Bill;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,9 +47,14 @@ public class BillRepository {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Partial, case-insensitive search by provider name.
+     * e.g. "EVN" matches "EVN HCMC", "evn" also matches.
+     */
     public List<Bill> findByProvider(String provider) {
+        String query = provider.toLowerCase();
         return store.values().stream()
-                .filter(b -> b.getProvider().equalsIgnoreCase(provider))
+                .filter(b -> b.getProvider().toLowerCase().contains(query))
                 .sorted((a, b) -> Integer.compare(a.getId(), b.getId()))
                 .collect(Collectors.toList());
     }

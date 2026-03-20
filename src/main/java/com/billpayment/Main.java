@@ -29,15 +29,15 @@ public class Main {
     }
 
     private static void runInteractiveShell(ApplicationContext context) {
-        Scanner scanner = new Scanner(System.in);
         System.out.println("Bill Payment System. Type a command or EXIT to quit.");
-        while (scanner.hasNextLine()) {
-            String line = scanner.nextLine().trim();
-            if (line.isEmpty()) continue;
-            String[] parts = line.split("\\s+");
-            context.getCommandRegistry().dispatch(parts, context);
+        try (Scanner scanner = new Scanner(System.in)) {
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine().trim();
+                if (line.isEmpty()) continue;
+                String[] parts = line.split("\\s+");
+                context.getCommandRegistry().dispatch(parts, context);
+            }
         }
         context.getSchedulerService().stop();
     }
 }
-

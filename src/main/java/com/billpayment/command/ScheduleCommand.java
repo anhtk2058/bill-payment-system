@@ -2,7 +2,6 @@ package com.billpayment.command;
 
 import com.billpayment.ApplicationContext;
 import com.billpayment.exception.BillNotFoundException;
-import com.billpayment.model.Payment;
 import com.billpayment.util.Formatter;
 
 import java.time.LocalDate;
@@ -25,8 +24,11 @@ public class ScheduleCommand implements Command {
         try {
             int billId = Integer.parseInt(args[1]);
             LocalDate scheduledDate = Formatter.parseDate(args[2]);
-            Payment payment = ctx.getPaymentService().schedulePayment(billId, scheduledDate);
+            ctx.getPaymentService().schedulePayment(billId, scheduledDate);
             System.out.println("Payment for bill id " + billId + " is scheduled on " + Formatter.formatDate(scheduledDate));
+            if (!scheduledDate.isAfter(LocalDate.now())) {
+                System.out.println("Note: Scheduled date is in the past. Payment will be processed automatically on next scheduler run.");
+            }
         } catch (BillNotFoundException e) {
             System.out.println(e.getMessage());
         } catch (IllegalArgumentException e) {
