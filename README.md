@@ -79,8 +79,27 @@ Good bye!
 
 ## Design Assumptions
 
-1. **All-or-nothing payment**: If paying multiple bills and one fails, all previously paid bills are rolled back via Saga compensation.
-2. **Due date priority**: Multi-bill payments process bills sorted by due date (earliest first).
-3. **Seed data**: 3 default bills pre-loaded on startup (ELECTRIC/WATER/INTERNET).
-4. **BigDecimal for amounts**: Avoids floating-point precision issues in financial calculations.
-5. **Scheduler**: Background daemon thread checks PENDING payments every second and processes them when their scheduled date arrives.
+1. **All-or-nothing payment (Saga Pattern)**
+   Rolling back with a simple try/catch would leave inconsistent state (e.g. bill deducted but bill state not updated). The Saga pattern with explicit `compensate()` steps guarantees that if bill N fails, all previously paid bills are refunded and reverted to `NOT_PAID` — regardless of failure cause.
+
+2. **Due date priority for multi-bill payments**
+   When paying multiple bills, they are sorted by `dueDate ASC` before execution. This ensures the most urgent bills are paid first — if funds run out mid-payment, the ones closest to overdue are already settled.
+
+3. **Immutable domain model (`Bill`, `Payment`)**
+   Both classes are `final` with all-`final` fields and no setters. State changes produce new copies via `withState()` / `withDetails()`. This prevents accidental mutation across threads (Saga + Scheduler share the same objects), and makes rollback reasoning simple — you always have the original snapshot.
+
+4. **`BigDecimal` for all monetary amounts**
+   `double` arithmetic introduces floating-point errors (e.g. `0.1 + 0.2 ≠ 0.3`). Financial applications must use `BigDecimal` for exact decimal arithmetic.
+
+5. **`DUE_DATE` lists all `NOT_PAID` bills sorted by due date**
+   Based on the assignment's example output, `DUE_DATE` shows all unpaid bills (not just overdue ones). The sort allows customers to see which bills need attention soonest.
+
+6. **`SCHEDULE` accepts past dates**
+   A scheduled payment with `date <= today` will be picked up and processed automatically on the next scheduler tick (within 1 second). This is intentional — it allows retroactive scheduling and immediate processing without a separate command.
+
+7. **Seed data on startup**
+   3 pre-loaded bills (ELECTRIC, WATER, INTERNET) match the assignment's `LIST_BILL` example output exactly, ensuring the demo commands work out of the box.
+
+8. **In-memory storage with `ConcurrentHashMap`**
+   No database is required. `ConcurrentHashMap` provides thread-safe reads/writes between the main CLI thread and the background `SchedulerService` daemon thread.
+
