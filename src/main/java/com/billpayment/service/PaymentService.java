@@ -13,6 +13,8 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
+
 
 /**
  * Orchestrates bill payment transactions using the Saga pattern.
@@ -45,6 +47,7 @@ public class PaymentService {
      * Pay multiple bills at once.
      * Bills are sorted by due date (earliest first) before payment.
      * All-or-nothing: if any step fails, all completed steps are rolled back.
+     * If payment fails due to insufficient funds, PENDING records are created for all bills.
      */
     public SagaResult payMultiple(List<Integer> billIds) {
         // Fetch all bills and validate existence
@@ -58,19 +61,52 @@ public class PaymentService {
 
         // Build Saga steps
         List<SagaStep> steps = new ArrayList<>();
-        LocalDate today = LocalDate.now();
         for (Bill bill : bills) {
             steps.add(new PayBillStep(bill, accountService, billService, paymentRepository, bill.getDueDate()));
         }
 
         // Run Saga
         SagaOrchestrator orchestrator = new SagaOrchestrator(steps);
-        return orchestrator.run();
+        SagaResult result = orchestrator.run();
+
+        // If payment failed (e.g. insufficient funds), create PENDING records for all unpaid bills
+        if (!result.isSuccess()) {
+            for (Bill bill : bills) {
+                if (bill.isPayable()) {
+                    // Only create PENDING if no existing payment record for this bill
+                    if (paymentRepository.findPendingByBillId(bill.getId()).isEmpty()) {
+                        paymentRepository.save(Payment.builder()
+                                .amount(bill.getAmount())
+                                .paymentDate(bill.getDueDate())
+                                .state(PaymentState.PENDING)
+                                .billId(bill.getId())
+                                .build());
+                    }
+                }
+            }
+        }
+
+        return result;
     }
 
     /** Schedule a pending payment for a bill on a specific date. Feature 7 */
     public Payment schedulePayment(int billId, LocalDate scheduledDate) {
         Bill bill = billService.findById(billId); // validates existence
+
+        // If a PENDING record already exists for this bill, update its date
+        Optional<Payment> existing = paymentRepository.findPendingByBillId(billId);
+        if (existing.isPresent()) {
+            Payment updated = Payment.builder()
+                    .id(existing.get().getId())
+                    .amount(existing.get().getAmount())
+                    .paymentDate(scheduledDate)
+                    .state(PaymentState.PENDING)
+                    .billId(billId)
+                    .build();
+            return paymentRepository.save(updated);
+        }
+
+        // Otherwise create a new PENDING record
         return paymentRepository.save(Payment.builder()
                 .amount(bill.getAmount())
                 .paymentDate(scheduledDate)

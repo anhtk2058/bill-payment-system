@@ -58,6 +58,12 @@ public class PaymentRepository {
                 .findFirst();
     }
 
+    public Optional<Payment> findPendingByBillId(int billId) {
+        return store.values().stream()
+                .filter(p -> p.getBillId() == billId && p.getState() == PaymentState.PENDING)
+                .findFirst();
+    }
+
     public boolean deleteById(int id) {
         return store.remove(id) != null;
     }

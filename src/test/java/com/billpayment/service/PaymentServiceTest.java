@@ -114,8 +114,10 @@ class PaymentServiceTest {
         assertEquals(BillState.NOT_PAID, billService.findById(b2.getId()).getState());
         // Balance should be fully restored
         assertEquals(new BigDecimal("250000"), accountService.getBalance());
-        // No payment records should remain
-        assertTrue(paymentService.listPayments().isEmpty());
+        // PENDING records are created for both bills (per spec: PAY failure creates scheduled records)
+        List<Payment> payments = paymentService.listPayments();
+        assertEquals(2, payments.size());
+        assertTrue(payments.stream().allMatch(p -> p.getState() == PaymentState.PENDING));
     }
 
     @Test
